@@ -319,3 +319,36 @@ reported by the target RPC. These values move as ledgers close and must never be
 compiled into ControlWatch. Each run must call `getHealth`, record the returned
 floor in its snapshot, and treat requested event history before that floor as
 unmeasurable rather than as evidence that no events occurred.
+
+## S8 — compliance linked-token enumeration
+
+- **Date:** 2026-11-06
+- **Network:** Stellar testnet
+- **Compliance:** `CDJBZS26QTNWPEZPL5NQOQZ3QELLPH47QQN6HIIT56HJMUL2AWGMBATS`
+
+### What was checked
+
+The deployed compliance contract spec exposes the exact function
+`linked_tokens() -> Vec<Address>`. It was simulated without submission:
+
+```text
+stellar contract invoke \
+  --id CDJBZS26QTNWPEZPL5NQOQZ3QELLPH47QQN6HIIT56HJMUL2AWGMBATS \
+  --source GD3C2MXS3PT6JJSTOFH4FZGMJ7GRMN52PZQC73FP3JYOEDS4LBAKIFXB \
+  --network testnet --send no -- linked_tokens
+```
+
+The result was:
+
+```json
+["CAI26Z4CPI5XQ34NEEN64ISTCHPNU733HD6AQQYQIA6NITB4E2AYYHHK"]
+```
+
+### Decision
+
+S8 passes. ControlWatch may call `linked_tokens` when the deployed surface
+contains it. The result is an enumeration, not proof that every returned token
+points back to this compliance contract, so reverse links must be checked
+independently. An empty vector is measurable and valid; absence of the function
+on another compliance implementation is a surface limitation, not an empty
+binding list.
