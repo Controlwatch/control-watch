@@ -196,3 +196,49 @@ consecutive spec entries with the pinned SDK's `xdr` package, and retain only
 `ScSpecEntryKindScSpecEntryFunctionV0` entries. The implementation must reject
 an invalid Wasm header, malformed section lengths, malformed XDR, and a missing
 `contractspecv0` section rather than returning a partial surface.
+
+## S5 — read the Wasm hash from a contract instance entry in Go
+
+- **Date:** 2026-11-06
+- **Network:** Stellar testnet
+- **Contract:** `CAI26Z4CPI5XQ34NEEN64ISTCHPNU733HD6AQQYQIA6NITB4E2AYYHHK`
+
+### What was checked
+
+A temporary Go test built the persistent contract-instance ledger key as:
+
+```text
+LedgerKey(CONTRACT_DATA) {
+  contract: ScAddress(CONTRACT_ID, <decoded C-address>),
+  key: ScVal(SCV_LEDGER_KEY_CONTRACT_INSTANCE),
+  durability: PERSISTENT
+}
+```
+
+It base64-encoded that `xdr.LedgerKey`, called `getLedgerEntries`, decoded the
+returned base64 value as `xdr.LedgerEntryData`, and followed this checked path:
+
+```text
+LedgerEntryData.GetContractData()
+  -> ContractDataEntry.Val.GetInstance()
+  -> ScContractInstance.Executable.GetWasmHash()
+```
+
+The live test passed with:
+
+```text
+latest ledger: 5588095
+last modified ledger: 5578863
+Wasm hash: a865ea31a0e97e47523cfdb3b1f56e1b17ae98c6ba3f9d9d4fb9f6c396ff62f6
+```
+
+The hash exactly matched SHA-256 of the locally built fixture Wasm. The
+temporary spike test was removed after execution.
+
+### Decision
+
+S5 passes. ControlWatch can read a Wasm contract's code hash without simulation.
+Every union arm must be checked with the SDK's `Get...` accessors. A missing
+entry, non-contract-data entry, non-instance value, or non-Wasm executable such
+as a Stellar Asset Contract must be represented explicitly and must never be
+coerced into a zero hash.
