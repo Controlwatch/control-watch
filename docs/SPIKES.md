@@ -287,3 +287,35 @@ value is the SAC's current admin and must not always be described as the issuer,
 because `set_admin` can change it. A missing admin is valid for the native SAC;
 ControlWatch must report that state distinctly instead of emitting a zero
 address or treating the SAC as an unsupported Wasm contract.
+
+## S7 — target RPC oldest retained ledger
+
+- **Date:** 2026-11-06
+- **RPC:** `https://soroban-testnet.stellar.org`
+
+### What was checked
+
+The target RPC's `getHealth` response was requested with:
+
+```text
+stellar network health --network testnet --output json-formatted
+```
+
+The response was:
+
+```json
+{
+  "status": "healthy",
+  "latestLedger": 5588146,
+  "oldestLedger": 5467187,
+  "ledgerRetentionWindow": 120960
+}
+```
+
+### Decision
+
+S7 passes. At the observation time, ledger 5,467,187 was the inclusive floor
+reported by the target RPC. These values move as ledgers close and must never be
+compiled into ControlWatch. Each run must call `getHealth`, record the returned
+floor in its snapshot, and treat requested event history before that floor as
+unmeasurable rather than as evidence that no events occurred.
