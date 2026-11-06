@@ -110,3 +110,46 @@ must preserve topic order and must not assume that all fields are in event data;
 addresses and roles marked as topics are part of the topic list. Admin changes
 are a two-event protocol, so `admin_transfer_initiated` is not evidence that the
 admin actually changed; only `admin_transfer_completed` confirms completion.
+
+## S3 — simulation with a null or unfunded source
+
+- **Date:** 2026-11-06
+- **Network:** Stellar testnet
+- **Token:** `CAI26Z4CPI5XQ34NEEN64ISTCHPNU733HD6AQQYQIA6NITB4E2AYYHHK`
+
+### What was checked
+
+A temporary key was generated locally without `--fund`. Only its public address
+was passed to the invocation, and `--send no` prevented signing or submission:
+
+```text
+stellar keys generate controlwatch-s3-unfunded
+stellar keys address controlwatch-s3-unfunded
+# GDFENFR7BNSY76YUW7OSTGNOJHS4VBDMJ2Z6D3VX7EXWCZHVDY43SWC7
+
+curl https://horizon-testnet.stellar.org/accounts/GDFENFR7BNSY76YUW7OSTGNOJHS4VBDMJ2Z6D3VX7EXWCZHVDY43SWC7
+# HTTP 404
+
+stellar contract invoke \
+  --id CAI26Z4CPI5XQ34NEEN64ISTCHPNU733HD6AQQYQIA6NITB4E2AYYHHK \
+  --source GDFENFR7BNSY76YUW7OSTGNOJHS4VBDMJ2Z6D3VX7EXWCZHVDY43SWC7 \
+  --network testnet --send no -- compliance
+# "CDJBZS26QTNWPEZPL5NQOQZ3QELLPH47QQN6HIIT56HJMUL2AWGMBATS"
+```
+
+The temporary identity was removed after the test. Omitting `--source` entirely
+failed before simulation because Stellar transactions require a source-account
+field. A true null source therefore cannot be encoded in transaction XDR.
+
+The conventional all-zero address
+`GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF` was also checked.
+Horizon returned HTTP 200 for that address on testnet, so it is not an unfunded
+sentinel and ControlWatch must not describe it as one.
+
+### Decision
+
+S3 passes through the unfunded-source path. Read-only getter simulations may use
+a syntactically valid, unfunded public account with no secret key. ControlWatch
+must always encode a source account, must never sign the envelope, and must only
+send it to `simulateTransaction`. The implementation must not rely on the
+all-zero address being absent from a network.
