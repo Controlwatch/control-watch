@@ -55,3 +55,58 @@ must be enumerated by calling `get_existing_roles`, then
 `get_role_member_count(role)`, then `get_role_member(role, index)`. Compliance
 modules must be queried once for each of the three exact hook variants. Empty
 module vectors are valid observations, not errors.
+
+## S2 — exact event names and layouts
+
+- **Date:** 2026-11-06
+- **Network:** Stellar testnet
+- **Token:** `CAI26Z4CPI5XQ34NEEN64ISTCHPNU733HD6AQQYQIA6NITB4E2AYYHHK`
+- **Compliance:** `CDJBZS26QTNWPEZPL5NQOQZ3QELLPH47QQN6HIIT56HJMUL2AWGMBATS`
+
+### What was checked
+
+The event structs in OpenZeppelin Stellar Contracts v0.8.0 were compared with
+the specs embedded in both deployed contracts. The deployed specs were fetched
+with:
+
+```text
+stellar contract info interface --contract-id <contract> \
+  --network testnet --output json-formatted
+```
+
+As a secondary check, retained events were queried from ledger 5,500,000 with
+`stellar events --output json`. The RPC returned `No events` for these contract
+IDs, so the spike does not claim that a retained occurrence of every event was
+observed. The deployed Wasm specs themselves contain the complete event
+schemas.
+
+### Results
+
+The layouts below use ordered topic segments. Segment zero is always the event
+name as a Soroban symbol. Event data uses the spec's `map` format.
+
+| Event | Ordered topics | Data map |
+|---|---|---|
+| `compliance_set` | `compliance_set`, `compliance: Address` | empty |
+| `identity_verifier_set` | `identity_verifier_set`, `identity_verifier: Address` | empty |
+| `module_added` | `module_added`, `hook: ComplianceHook` | `module: Address` |
+| `module_removed` | `module_removed`, `hook: ComplianceHook` | `module: Address` |
+| `paused` | `paused` | empty |
+| `unpaused` | `unpaused` | empty |
+| `admin_transfer_initiated` | `admin_transfer_initiated`, `current_admin: Address` | `new_admin: Address`, `live_until_ledger: u32` |
+| `admin_transfer_completed` | `admin_transfer_completed`, `new_admin: Address` | `previous_admin: Address` |
+| `admin_renounced` | `admin_renounced`, `admin: Address` | empty |
+| `role_admin_changed` | `role_admin_changed`, `role: Symbol` | `previous_admin_role: Symbol`, `new_admin_role: Symbol` |
+| `role_granted` | `role_granted`, `role: Symbol`, `account: Address` | `caller: Address` |
+| `role_revoked` | `role_revoked`, `role: Symbol`, `account: Address` | `caller: Address` |
+
+For `module_added` and `module_removed`, `ComplianceHook` is the union verified
+in S1 with the variants `Transferred`, `Created`, and `Destroyed`.
+
+### Decision
+
+S2 passes. Event matching may use the exact segment-zero symbols above. Decoders
+must preserve topic order and must not assume that all fields are in event data;
+addresses and roles marked as topics are part of the topic list. Admin changes
+are a two-event protocol, so `admin_transfer_initiated` is not evidence that the
+admin actually changed; only `admin_transfer_completed` confirms completion.
