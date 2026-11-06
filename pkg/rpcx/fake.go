@@ -43,7 +43,10 @@ func (f *FakeClient) Calls() FakeCalls {
 		calls.GetLedgerEntries[index] = append([]string(nil), keys...)
 	}
 	calls.SimulateTransaction = append([]string(nil), f.calls.SimulateTransaction...)
-	calls.GetEvents = append([]EventsRequest(nil), f.calls.GetEvents...)
+	calls.GetEvents = make([]EventsRequest, len(f.calls.GetEvents))
+	for index, request := range f.calls.GetEvents {
+		calls.GetEvents[index] = cloneEventsRequest(request)
+	}
 	calls.GetTransaction = append([]string(nil), f.calls.GetTransaction...)
 	return calls
 }
