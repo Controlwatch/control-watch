@@ -242,3 +242,48 @@ Every union arm must be checked with the SDK's `Get...` accessors. A missing
 entry, non-contract-data entry, non-instance value, or non-Wasm executable such
 as a Stellar Asset Contract must be represented explicitly and must never be
 coerced into a zero hash.
+
+## S6 — Stellar Asset Contract admin getter
+
+- **Date:** 2026-11-06
+- **Network:** Stellar testnet
+- **Issued asset:** `USDC:GAHPYWLK6YRN7CVYZOO4H3VDRZ7PVF5UJGLZCSPAEIKJE2XSWF5LAGER`
+- **Issued SAC:** `CAZRY5GSFBFXD7H6GAFBA5YGYQTDXU4QKWKMYFWBAZFUCURN3WKX6LF5`
+- **Native SAC:** `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC`
+
+### What was checked
+
+The SAC addresses were derived with `stellar contract id asset`. The deployed
+native SAC interface was fetched with `stellar contract info interface` and
+contained this exact function:
+
+```text
+admin() -> Address
+```
+
+Its spec documents that the function panics when no admin is set. Both calls
+below were simulations using `--send no`.
+
+For the issued USDC SAC:
+
+```text
+stellar contract invoke --id CAZRY5GSFBFXD7H6GAFBA5YGYQTDXU4QKWKMYFWBAZFUCURN3WKX6LF5 \
+  --source GD3C2MXS3PT6JJSTOFH4FZGMJ7GRMN52PZQC73FP3JYOEDS4LBAKIFXB \
+  --network testnet --send no -- admin
+# "GAHPYWLK6YRN7CVYZOO4H3VDRZ7PVF5UJGLZCSPAEIKJE2XSWF5LAGER"
+```
+
+The returned admin matched this asset's issuer. For the native XLM SAC, the
+same call failed with:
+
+```text
+HostError: Error(Storage, MissingValue)
+```
+
+### Decision
+
+S6 passes. The exact getter is `admin`, not `get_admin`. Its successful return
+value is the SAC's current admin and must not always be described as the issuer,
+because `set_admin` can change it. A missing admin is valid for the native SAC;
+ControlWatch must report that state distinctly instead of emitting a zero
+address or treating the SAC as an unsupported Wasm contract.
