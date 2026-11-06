@@ -19,6 +19,16 @@ type getterResult struct {
 	latestLedger uint32
 }
 
+type simulationError struct {
+	function     surface.FunctionName
+	detail       string
+	latestLedger uint32
+}
+
+func (e *simulationError) Error() string {
+	return fmt.Sprintf("call getter %s: simulation failed: %s", e.function, e.detail)
+}
+
 // callGetter constructs an unsigned, sequence-zero invocation and evaluates it
 // through read-only RPC simulation. It never signs or submits the transaction.
 func callGetter(
@@ -83,7 +93,11 @@ func callGetter(
 		return getterResult{}, fmt.Errorf("call getter %s: simulate invocation: %w", function, err)
 	}
 	if simulation.Error != "" {
-		return getterResult{}, fmt.Errorf("call getter %s: simulation failed: %s", function, simulation.Error)
+		return getterResult{}, &simulationError{
+			function:     function,
+			detail:       simulation.Error,
+			latestLedger: simulation.LatestLedger,
+		}
 	}
 	if len(simulation.Results) != 1 {
 		return getterResult{}, fmt.Errorf("call getter %s: simulation returned %d results, want 1", function, len(simulation.Results))

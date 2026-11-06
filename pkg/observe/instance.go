@@ -13,6 +13,7 @@ import (
 
 type contractInstance struct {
 	executable         xdr.ContractExecutable
+	ledgerEntry        xdr.LedgerEntry
 	latestLedger       uint32
 	lastModifiedLedger uint32
 }
@@ -93,7 +94,11 @@ func readContractInstance(
 	}
 
 	return contractInstance{
-		executable:         instance.Executable,
+		executable: instance.Executable,
+		ledgerEntry: xdr.LedgerEntry{
+			LastModifiedLedgerSeq: xdr.Uint32(entry.LastModifiedLedger),
+			Data:                  entryData,
+		},
 		latestLedger:       response.LatestLedger,
 		lastModifiedLedger: entry.LastModifiedLedger,
 	}, nil
