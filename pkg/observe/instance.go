@@ -88,6 +88,16 @@ func readContractInstance(
 	if !ok {
 		return contractInstance{}, fmt.Errorf("read contract instance: ledger entry is not contract data")
 	}
+	entryContract, ok := contractData.Contract.GetContractId()
+	if !ok || entryContract != contract {
+		return contractInstance{}, fmt.Errorf("read contract instance: entry belongs to an unexpected contract")
+	}
+	if contractData.Key.Type != xdr.ScValTypeScvLedgerKeyContractInstance {
+		return contractInstance{}, fmt.Errorf("read contract instance: entry has an unexpected contract-data key")
+	}
+	if contractData.Durability != xdr.ContractDataDurabilityPersistent {
+		return contractInstance{}, fmt.Errorf("read contract instance: entry is not persistent")
+	}
 	instance, ok := contractData.Val.GetInstance()
 	if !ok {
 		return contractInstance{}, fmt.Errorf("read contract instance: contract data is not an instance value")

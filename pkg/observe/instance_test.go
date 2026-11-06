@@ -104,6 +104,30 @@ func TestReadContractInstanceRejectsInvalidResponses(t *testing.T) {
 			entryXDR := contractEntryXDR(t, xdr.ScVal{Type: xdr.ScValTypeScvVoid})
 			return rpcx.LedgerEntries{Entries: []rpcx.LedgerEntry{{Key: key, XDR: entryXDR}}}
 		}, wantError: "not an instance value"},
+		{name: "wrong embedded contract", response: func(t *testing.T, key string) rpcx.LedgerEntries {
+			entryXDR := mutatedInstanceEntryXDR(t, func(entry *xdr.ContractDataEntry) {
+				otherBytes, err := strkey.Decode(strkey.VersionByteContract, "CDJBZS26QTNWPEZPL5NQOQZ3QELLPH47QQN6HIIT56HJMUL2AWGMBATS")
+				if err != nil {
+					t.Fatalf("decode other contract: %v", err)
+				}
+				var other xdr.ContractId
+				copy(other[:], otherBytes)
+				entry.Contract.ContractId = &other
+			})
+			return rpcx.LedgerEntries{Entries: []rpcx.LedgerEntry{{Key: key, XDR: entryXDR}}}
+		}, wantError: "unexpected contract"},
+		{name: "wrong embedded key", response: func(t *testing.T, key string) rpcx.LedgerEntries {
+			entryXDR := mutatedInstanceEntryXDR(t, func(entry *xdr.ContractDataEntry) {
+				entry.Key = xdr.ScVal{Type: xdr.ScValTypeScvVoid}
+			})
+			return rpcx.LedgerEntries{Entries: []rpcx.LedgerEntry{{Key: key, XDR: entryXDR}}}
+		}, wantError: "unexpected contract-data key"},
+		{name: "temporary entry", response: func(t *testing.T, key string) rpcx.LedgerEntries {
+			entryXDR := mutatedInstanceEntryXDR(t, func(entry *xdr.ContractDataEntry) {
+				entry.Durability = xdr.ContractDataDurabilityTemporary
+			})
+			return rpcx.LedgerEntries{Entries: []rpcx.LedgerEntry{{Key: key, XDR: entryXDR}}}
+		}, wantError: "not persistent"},
 	}
 
 	for _, test := range tests {
@@ -226,4 +250,19 @@ func stellarAssetExecutable() xdr.ContractExecutable {
 	return xdr.ContractExecutable{
 		Type: xdr.ContractExecutableTypeContractExecutableStellarAsset,
 	}
+}
+
+func mutatedInstanceEntryXDR(t *testing.T, mutate func(*xdr.ContractDataEntry)) string {
+	t.Helper()
+
+	var entry xdr.LedgerEntryData
+	if err := xdr.SafeUnmarshalBase64(instanceEntryXDR(t, stellarAssetExecutable()), &entry); err != nil {
+		t.Fatalf("decode instance fixture: %v", err)
+	}
+	mutate(entry.ContractData)
+	encoded, err := xdr.MarshalBase64(entry)
+	if err != nil {
+		t.Fatalf("marshal mutated instance fixture: %v", err)
+	}
+	return encoded
 }
