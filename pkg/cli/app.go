@@ -58,6 +58,8 @@ func (app *App) Run(ctx context.Context, args []string, stdout io.Writer, stderr
 	switch args[0] {
 	case "inspect":
 		return app.runInspect(ctx, args[1:], stdout, stderr)
+	case "baseline":
+		return app.runBaseline(ctx, args[1:], stdout, stderr)
 	default:
 		_, _ = fmt.Fprintf(stderr, "unknown command %q\n", args[0])
 		return 2
