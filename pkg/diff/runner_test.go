@@ -39,8 +39,11 @@ func TestRunner(t *testing.T) {
 					NotCompared: []model.NotCompared{{Subject: "z"}},
 				}},
 				staticDetector{result: Result{
-					Findings:    []model.Finding{{Code: "CW-001", Subject: "a"}},
-					NotCompared: []model.NotCompared{{Subject: "a", Reason: "missing"}},
+					Findings: []model.Finding{{Code: "CW-001", Subject: "a"}},
+					NotCompared: []model.NotCompared{
+						{Subject: "a", Reason: "missing"},
+						{Subject: "z"},
+					},
 				}},
 			},
 			want: Result{

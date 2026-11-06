@@ -73,5 +73,21 @@ func (runner *Runner) Run(before model.Snapshot, after model.Snapshot) (Result, 
 		}
 		return result.NotCompared[left].Subject < result.NotCompared[right].Subject
 	})
+	result.NotCompared = deduplicateNotCompared(result.NotCompared)
 	return result, nil
+}
+
+func deduplicateNotCompared(values []model.NotCompared) []model.NotCompared {
+	if len(values) < 2 {
+		return values
+	}
+	unique := values[:1]
+	for _, value := range values[1:] {
+		previous := unique[len(unique)-1]
+		if value.Subject == previous.Subject && value.Reason == previous.Reason {
+			continue
+		}
+		unique = append(unique, value)
+	}
+	return unique
 }
