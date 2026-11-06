@@ -69,16 +69,14 @@ type EventsPage struct {
 
 // Event is one normalized Stellar contract event.
 type Event struct {
-	ID                       string
-	Type                     string
-	Ledger                   uint32
-	LedgerClosedAt           string
-	ContractID               string
-	Topic                    []string
-	ValueXDR                 string
-	TransactionHash          string
-	PagingToken              string
-	InSuccessfulContractCall bool
+	ID              string
+	Type            string
+	Ledger          uint32
+	LedgerClosedAt  string
+	ContractID      string
+	Topic           []string
+	ValueXDR        string
+	TransactionHash string
 }
 
 // Transaction is a normalized getTransaction response.
@@ -87,7 +85,7 @@ type Transaction struct {
 	LatestLedger  uint32
 	Hash          string
 	Ledger        uint32
-	CreatedAt     string
+	CreatedAt     int64
 	EnvelopeXDR   string
 	ResultXDR     string
 	ResultMetaXDR string
