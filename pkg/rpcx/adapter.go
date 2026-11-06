@@ -29,7 +29,7 @@ var _ Client = (*Adapter)(nil)
 
 // NewAdapter constructs an SDK-backed read-only RPC client.
 func NewAdapter(rpcURL string, httpClient *http.Client) *Adapter {
-	return &Adapter{client: rpcclient.NewClient(rpcURL, httpClient)}
+	return &Adapter{client: rpcclient.NewClient(rpcURL, withStatusErrors(httpClient))}
 }
 
 // Close releases the SDK client's network resources.
