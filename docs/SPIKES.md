@@ -153,3 +153,46 @@ a syntactically valid, unfunded public account with no secret key. ControlWatch
 must always encode a source account, must never sign the envelope, and must only
 send it to `simulateTransaction`. The implementation must not rely on the
 all-zero address being absent from a network.
+
+## S4 — list exported contract functions from Wasm in Go
+
+- **Date:** 2026-11-06
+- **Input:** `controlwatch_rwa_token.wasm` built from the pinned fixture
+- **SDK:** `github.com/stellar/go-stellar-sdk v0.8.0`
+
+### What was checked
+
+A temporary Go test parsed the Wasm binary directly. It walked standard Wasm
+sections, selected the custom section named `contractspecv0`, and decoded its
+payload with `github.com/stellar/go-stellar-sdk/xdr`.
+
+The payload is a concatenation of `xdr.ScSpecEntry` values, not an XDR vector.
+The working decode loop used a `bytes.Reader`, called `xdr.Unmarshal` once per
+entry until the reader was empty, selected entries for which
+`entry.GetFunctionV0()` returned true, and read `function.Name`.
+
+The test passed and returned 48 function names:
+
+```text
+__constructor accept_admin_transfer allowance approve balance batch_burn
+batch_forced_transfer batch_freeze_partial_tokens batch_mint
+batch_set_address_frozen batch_transfer batch_unfreeze_partial_tokens burn
+compliance decimals forced_transfer freeze_partial_tokens get_admin
+get_existing_roles get_frozen_tokens get_role_admin get_role_member
+get_role_member_count grant_role has_role identity_verifier is_frozen mint name
+onchain_id pause paused recover_balance renounce_admin renounce_role revoke_role
+set_address_frozen set_compliance set_identity_verifier set_role_admin symbol
+total_supply transfer transfer_admin_role transfer_from unfreeze_partial_tokens
+unpause version
+```
+
+The temporary spike test was removed after execution.
+
+### Decision
+
+S4 passes. ControlWatch can enumerate the callable Wasm surface without another
+dependency: parse the Wasm section framing with the standard library, decode
+consecutive spec entries with the pinned SDK's `xdr` package, and retain only
+`ScSpecEntryKindScSpecEntryFunctionV0` entries. The implementation must reject
+an invalid Wasm header, malformed section lengths, malformed XDR, and a missing
+`contractspecv0` section rather than returning a partial surface.
