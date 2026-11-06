@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Controlwatch/control-watch/pkg/model"
 	"github.com/Controlwatch/control-watch/pkg/rpcx"
 	"github.com/stellar/go-stellar-sdk/strkey"
 	"github.com/stellar/go-stellar-sdk/xdr"
@@ -79,7 +80,7 @@ func TestReadContractInstanceRejectsInvalidResponses(t *testing.T) {
 		wantError string
 	}{
 		{name: "transport", clientErr: errors.New("offline"), wantError: "get ledger entry: offline"},
-		{name: "missing", response: func(*testing.T, string) rpcx.LedgerEntries { return rpcx.LedgerEntries{} }, wantError: "returned 0 entries"},
+		{name: "missing", response: func(*testing.T, string) rpcx.LedgerEntries { return rpcx.LedgerEntries{} }, wantError: "returned no entry"},
 		{name: "multiple", response: func(*testing.T, string) rpcx.LedgerEntries {
 			return rpcx.LedgerEntries{Entries: []rpcx.LedgerEntry{{}, {}}}
 		}, wantError: "returned 2 entries"},
@@ -120,6 +121,12 @@ func TestReadContractInstanceRejectsInvalidResponses(t *testing.T) {
 			_, err := readContractInstance(context.Background(), fake, testContractID)
 			if err == nil || !strings.Contains(err.Error(), test.wantError) {
 				t.Fatalf("error = %v, want substring %q", err, test.wantError)
+			}
+			if test.name == "missing" {
+				code, ok := model.CodeOf(err)
+				if !ok || code != model.CodeContractNotFound {
+					t.Fatalf("error code = (%q, %t), want %q", code, ok, model.CodeContractNotFound)
+				}
 			}
 		})
 	}

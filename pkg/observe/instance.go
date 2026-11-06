@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 
+	"github.com/Controlwatch/control-watch/pkg/model"
 	"github.com/Controlwatch/control-watch/pkg/rpcx"
 	"github.com/stellar/go-stellar-sdk/strkey"
 	"github.com/stellar/go-stellar-sdk/xdr"
@@ -60,6 +61,12 @@ func readContractInstance(
 	response, err := client.GetLedgerEntries(ctx, []string{keyXDR})
 	if err != nil {
 		return contractInstance{}, fmt.Errorf("read contract instance: get ledger entry: %w", err)
+	}
+	if len(response.Entries) == 0 {
+		return contractInstance{}, model.NewError(
+			model.CodeContractNotFound,
+			fmt.Errorf("read contract instance: RPC returned no entry"),
+		)
 	}
 	if len(response.Entries) != 1 {
 		return contractInstance{}, fmt.Errorf(

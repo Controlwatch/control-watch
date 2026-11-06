@@ -13,14 +13,23 @@ type EventName string
 type ComplianceHook string
 
 const (
-	// Verified RWA and access-control getters.
-	FunctionCompliance         FunctionName = "compliance"
-	FunctionIdentityVerifier   FunctionName = "identity_verifier"
-	FunctionPaused             FunctionName = "paused"
-	FunctionGetAdmin           FunctionName = "get_admin"
-	FunctionGetExistingRoles   FunctionName = "get_existing_roles"
-	FunctionGetRoleMemberCount FunctionName = "get_role_member_count"
-	FunctionGetRoleMember      FunctionName = "get_role_member"
+	// Verified RWA and access-control surface.
+	FunctionCompliance            FunctionName = "compliance"
+	FunctionIdentityVerifier      FunctionName = "identity_verifier"
+	FunctionPaused                FunctionName = "paused"
+	FunctionGetAdmin              FunctionName = "get_admin"
+	FunctionGetExistingRoles      FunctionName = "get_existing_roles"
+	FunctionGetRoleMemberCount    FunctionName = "get_role_member_count"
+	FunctionGetRoleMember         FunctionName = "get_role_member"
+	FunctionSetCompliance         FunctionName = "set_compliance"
+	FunctionSetIdentityVerifier   FunctionName = "set_identity_verifier"
+	FunctionForcedTransfer        FunctionName = "forced_transfer"
+	FunctionRecoverBalance        FunctionName = "recover_balance"
+	FunctionFreezePartialTokens   FunctionName = "freeze_partial_tokens"
+	FunctionUnfreezePartialTokens FunctionName = "unfreeze_partial_tokens"
+	FunctionGetFrozenTokens       FunctionName = "get_frozen_tokens"
+	FunctionSetAddressFrozen      FunctionName = "set_address_frozen"
+	FunctionIsFrozen              FunctionName = "is_frozen"
 
 	// Verified compliance-contract getters.
 	FunctionGetModulesForHook FunctionName = "get_modules_for_hook"
