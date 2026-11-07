@@ -55,8 +55,17 @@ func (enricher *Enricher) Attach(
 		)
 	}
 	if startLedger < window.OldestLedger {
-		changedBetween := [2]uint32{before.LedgerSeq, after.LedgerSeq}
+		contracts, err := sortedLedgerContracts(result, before, after)
+		if err != nil {
+			return nil, err
+		}
+		lastModified, err := readLastModifiedLedgers(ctx, enricher.client, contracts)
+		if err != nil {
+			return nil, err
+		}
 		for index := range result {
+			contractID := evidenceLedgerContract(result[index], before, after)
+			changedBetween := [2]uint32{before.LedgerSeq, lastModified[contractID]}
 			result[index].Evidence = model.Evidence{
 				Status:         model.EvidenceUnavailableOutsideRetention,
 				Items:          []model.EvidenceItem{},

@@ -10,19 +10,22 @@ import (
 	"github.com/Controlwatch/control-watch/pkg/surface"
 )
 
+const evidenceTestContract = "CAI26Z4CPI5XQ34NEEN64ISTCHPNU733HD6AQQYQIA6NITB4E2AYYHHK"
+
 func TestEnricherAttachEvidenceScenarios(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name           string
-		beforeLedger   uint32
-		afterLedger    uint32
-		finding        model.Finding
-		health         rpcx.Health
-		events         []rpcx.Event
-		want           model.Evidence
-		wantEventCalls int
-		wantTxCalls    int
+		name            string
+		beforeLedger    uint32
+		afterLedger     uint32
+		finding         model.Finding
+		health          rpcx.Health
+		events          []rpcx.Event
+		want            model.Evidence
+		wantEventCalls  int
+		wantTxCalls     int
+		wantLedgerCalls int
 	}{
 		{
 			name:         "matching event inside retention",
@@ -33,7 +36,7 @@ func TestEnricherAttachEvidenceScenarios(t *testing.T) {
 			events: []rpcx.Event{{
 				ID:              "event-1",
 				Ledger:          105,
-				ContractID:      "contract",
+				ContractID:      evidenceTestContract,
 				Topic:           []string{mustEventTopic(t, surface.EventPaused)},
 				TransactionHash: "tx-1",
 			}},
@@ -57,8 +60,9 @@ func TestEnricherAttachEvidenceScenarios(t *testing.T) {
 			want: model.Evidence{
 				Status:         model.EvidenceUnavailableOutsideRetention,
 				Items:          []model.EvidenceItem{},
-				ChangedBetween: ledgerInterval(50, 110),
+				ChangedBetween: ledgerInterval(50, 107),
 			},
+			wantLedgerCalls: 1,
 		},
 		{
 			name:           "mapped event was not emitted",
@@ -95,6 +99,13 @@ func TestEnricherAttachEvidenceScenarios(t *testing.T) {
 				GetTransactionFunc: func(_ context.Context, hash string) (rpcx.Transaction, error) {
 					return rpcx.Transaction{Hash: hash, Ledger: 105}, nil
 				},
+				GetLedgerEntriesFunc: func(_ context.Context, keys []string) (rpcx.LedgerEntries, error) {
+					entries := make([]rpcx.LedgerEntry, len(keys))
+					for index, key := range keys {
+						entries[index] = rpcx.LedgerEntry{Key: key, LastModifiedLedger: 107}
+					}
+					return rpcx.LedgerEntries{Entries: entries}, nil
+				},
 			}
 			enricher, err := NewEnricher(client)
 			if err != nil {
@@ -117,12 +128,13 @@ func TestEnricherAttachEvidenceScenarios(t *testing.T) {
 				t.Fatalf("input finding was mutated: %#v", input[0])
 			}
 			calls := client.Calls()
-			if calls.GetHealth != 1 || len(calls.GetEvents) != test.wantEventCalls || len(calls.GetTransaction) != test.wantTxCalls {
+			if calls.GetHealth != 1 || len(calls.GetEvents) != test.wantEventCalls || len(calls.GetTransaction) != test.wantTxCalls || len(calls.GetLedgerEntries) != test.wantLedgerCalls {
 				t.Fatalf(
-					"calls = %#v, want health=1 events=%d transactions=%d",
+					"calls = %#v, want health=1 events=%d transactions=%d ledger=%d",
 					calls,
 					test.wantEventCalls,
 					test.wantTxCalls,
+					test.wantLedgerCalls,
 				)
 			}
 			if test.wantEventCalls > 0 && (eventRequest.StartLedger != test.beforeLedger+1 || eventRequest.EndLedger != test.afterLedger) {
@@ -153,7 +165,7 @@ func TestEnricherSkipsRPCWhenThereAreNoFindings(t *testing.T) {
 }
 
 func snapshotAt(ledger uint32) model.Snapshot {
-	return model.Snapshot{ContractID: "contract", LedgerSeq: ledger}
+	return model.Snapshot{ContractID: evidenceTestContract, LedgerSeq: ledger}
 }
 
 func ledgerInterval(before uint32, after uint32) *[2]uint32 {
