@@ -41,22 +41,9 @@ func readContractInstance(
 
 	var contract xdr.ContractId
 	copy(contract[:], contractBytes)
-	key := xdr.LedgerKey{
-		Type: xdr.LedgerEntryTypeContractData,
-		ContractData: &xdr.LedgerKeyContractData{
-			Contract: xdr.ScAddress{
-				Type:       xdr.ScAddressTypeScAddressTypeContract,
-				ContractId: &contract,
-			},
-			Key: xdr.ScVal{
-				Type: xdr.ScValTypeScvLedgerKeyContractInstance,
-			},
-			Durability: xdr.ContractDataDurabilityPersistent,
-		},
-	}
-	keyXDR, err := xdr.MarshalBase64(key)
+	keyXDR, err := rpcx.ContractInstanceKey(contractID)
 	if err != nil {
-		return contractInstance{}, fmt.Errorf("read contract instance: encode ledger key: %w", err)
+		return contractInstance{}, fmt.Errorf("read contract instance: %w", err)
 	}
 
 	response, err := client.GetLedgerEntries(ctx, []string{keyXDR})
