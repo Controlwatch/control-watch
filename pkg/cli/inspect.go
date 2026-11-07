@@ -12,6 +12,7 @@ import (
 
 	"github.com/Controlwatch/control-watch/pkg/canon"
 	"github.com/Controlwatch/control-watch/pkg/model"
+	"github.com/Controlwatch/control-watch/pkg/observe"
 	"github.com/stellar/go-stellar-sdk/strkey"
 )
 
@@ -67,17 +68,7 @@ func (app *App) runInspect(
 		writeCLIError(stderr, err)
 		return exitCode(err)
 	}
-	snapshot := model.Snapshot{
-		SchemaVersion: model.SchemaVersion,
-		ToolVersion:   app.toolVersion,
-		Network:       string(config.Network.Name),
-		ContractID:    options.contract,
-		LedgerSeq:     observed.LedgerSeq,
-		ObservedAt:    app.now(),
-		Completeness:  observed.Completeness,
-		Warnings:      observed.Warnings,
-		Observation:   observed.Observation,
-	}
+	snapshot := app.snapshot(config, options.contract, observed)
 	if err := canon.PopulateSnapshotHashes(&snapshot); err != nil {
 		writeCLIError(stderr, err)
 		return 3
@@ -110,6 +101,20 @@ func (app *App) runInspect(
 		return 3
 	}
 	return 0
+}
+
+func (app *App) snapshot(config Config, contractID string, observed observe.Result) model.Snapshot {
+	return model.Snapshot{
+		SchemaVersion: model.SchemaVersion,
+		ToolVersion:   app.toolVersion,
+		Network:       string(config.Network.Name),
+		ContractID:    contractID,
+		LedgerSeq:     observed.LedgerSeq,
+		ObservedAt:    app.now(),
+		Completeness:  observed.Completeness,
+		Warnings:      observed.Warnings,
+		Observation:   observed.Observation,
+	}
 }
 
 func (app *App) parseInspect(args []string, stderr io.Writer) (inspectOptions, error) {

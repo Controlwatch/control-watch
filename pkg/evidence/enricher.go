@@ -23,6 +23,11 @@ func NewEnricher(client rpcx.Client) (*Enricher, error) {
 	return &Enricher{client: client}, nil
 }
 
+// Retention reads the RPC server's current retained-ledger window.
+func (enricher *Enricher) Retention(ctx context.Context) (RetentionWindow, error) {
+	return ReadRetentionWindow(ctx, enricher.client)
+}
+
 // Attach returns a copy of findings with evidence for the interval after the
 // baseline snapshot through the current snapshot.
 func (enricher *Enricher) Attach(
@@ -42,7 +47,7 @@ func (enricher *Enricher) Attach(
 			before.LedgerSeq,
 		)
 	}
-	window, err := ReadRetentionWindow(ctx, enricher.client)
+	window, err := enricher.Retention(ctx)
 	if err != nil {
 		return nil, err
 	}
