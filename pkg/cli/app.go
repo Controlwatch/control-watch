@@ -72,6 +72,8 @@ func (app *App) Run(ctx context.Context, args []string, stdout io.Writer, stderr
 		return app.runBaseline(ctx, args[1:], stdout, stderr)
 	case "compare":
 		return app.runCompare(ctx, args[1:], stdout, stderr)
+	case "version":
+		return app.runVersion(args[1:], stdout, stderr)
 	default:
 		_, _ = fmt.Fprintf(stderr, "unknown command %q\n", args[0])
 		return 2
