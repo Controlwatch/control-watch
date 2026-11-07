@@ -53,7 +53,7 @@ func TestFileStoreSaveLoadAndList(t *testing.T) {
 	if err != nil {
 		t.Fatalf("List returned error: %v", err)
 	}
-	wantIDs := []string{newerRef.ID, olderRef.ID}
+	wantIDs := []string{olderRef.ID, newerRef.ID}
 	gotIDs := []string{references[0].ID, references[1].ID}
 	if !reflect.DeepEqual(gotIDs, wantIDs) {
 		t.Fatalf("list IDs = %#v, want %#v", gotIDs, wantIDs)

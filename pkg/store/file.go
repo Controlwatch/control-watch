@@ -159,7 +159,7 @@ func (store *FileStore) Load(
 	return snapshot, nil
 }
 
-// List returns valid snapshot filename references newest-ledger first. It does
+// List returns valid snapshot filename references oldest-ledger first. It does
 // not open or verify snapshot contents.
 func (store *FileStore) List(
 	ctx context.Context,
@@ -194,7 +194,7 @@ func (store *FileStore) List(
 		if references[left].LedgerSeq == references[right].LedgerSeq {
 			return references[left].ID < references[right].ID
 		}
-		return references[left].LedgerSeq > references[right].LedgerSeq
+		return references[left].LedgerSeq < references[right].LedgerSeq
 	})
 	return references, nil
 }
