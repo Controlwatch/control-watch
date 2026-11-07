@@ -1,0 +1,213 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://controlwatch.dev/schemas/report-v1.json",
+  "title": "ControlWatch comparison report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "generated_at",
+    "network",
+    "contract_id",
+    "baseline",
+    "current",
+    "findings",
+    "not_compared",
+    "completeness",
+    "rpc",
+    "disclaimer"
+  ],
+  "properties": {
+    "schema_version": { "const": "1" },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "network": { "enum": ["testnet", "mainnet"] },
+    "contract_id": { "$ref": "#/$defs/contractId" },
+    "baseline": { "$ref": "#/$defs/baseline" },
+    "current": { "$ref": "#/$defs/current" },
+    "findings": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/finding" }
+    },
+    "not_compared": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/notCompared" }
+    },
+    "completeness": { "enum": ["COMPLETE", "PARTIAL"] },
+    "rpc": { "$ref": "#/$defs/rpc" },
+    "disclaimer": { "type": "string", "minLength": 1 }
+  },
+  "$defs": {
+    "contractId": {
+      "type": "string",
+      "pattern": "^C[A-Z2-7]{55}$"
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "baseline": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["snapshot_id", "ledger_sequence", "snapshot_hash"],
+      "properties": {
+        "snapshot_id": {
+          "type": "string",
+          "pattern": "^[0-9]+-[0-9a-f]{8}$"
+        },
+        "ledger_sequence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "snapshot_hash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "current": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ledger_sequence", "snapshot_hash"],
+      "properties": {
+        "ledger_sequence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "snapshot_hash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "name",
+        "subject",
+        "before",
+        "after",
+        "review_priority",
+        "explanation",
+        "next_step",
+        "evidence"
+      ],
+      "properties": {
+        "code": {
+          "enum": [
+            "CW-001",
+            "CW-002",
+            "CW-003",
+            "CW-004",
+            "CW-005",
+            "CW-006",
+            "CW-007",
+            "CW-008",
+            "CW-009",
+            "CW-010",
+            "CW-011",
+            "CW-012"
+          ]
+        },
+        "name": {
+          "enum": [
+            "COMPLIANCE_CONTRACT_CHANGED",
+            "IDENTITY_VERIFIER_CHANGED",
+            "MODULE_ADDED",
+            "MODULE_REMOVED",
+            "WASM_HASH_CHANGED",
+            "ADMIN_CHANGED",
+            "ROLE_MEMBERS_CHANGED",
+            "PAUSE_STATE_CHANGED",
+            "SAC_ADMIN_CHANGED",
+            "CLASSIFICATION_CHANGED",
+            "CLASSIC_FLAGS_CHANGED",
+            "MODULE_HOOKS_CHANGED"
+          ]
+        },
+        "subject": { "type": "string", "minLength": 1 },
+        "before": { "type": "string" },
+        "after": { "type": "string" },
+        "review_priority": { "enum": ["HIGH", "MEDIUM", "LOW", "INFO"] },
+        "explanation": { "type": "string", "minLength": 1 },
+        "next_step": { "type": "string", "minLength": 1 },
+        "evidence": { "$ref": "#/$defs/evidence" }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "items"],
+      "properties": {
+        "status": {
+          "enum": [
+            "FOUND",
+            "UNAVAILABLE_OUTSIDE_RETENTION",
+            "NOT_EMITTED",
+            "UNMEASURABLE"
+          ]
+        },
+        "items": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/evidenceItem" }
+        },
+        "changed_between": {
+          "type": "array",
+          "prefixItems": [
+            { "type": "integer", "minimum": 1, "maximum": 4294967295 },
+            { "type": "integer", "minimum": 1, "maximum": 4294967295 }
+          ],
+          "minItems": 2,
+          "maxItems": 2
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": { "const": "UNAVAILABLE_OUTSIDE_RETENTION" }
+            },
+            "required": ["status"]
+          },
+          "then": { "required": ["changed_between"] }
+        }
+      ]
+    },
+    "evidenceItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ledger", "tx_hash", "topic"],
+      "properties": {
+        "ledger": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        },
+        "tx_hash": { "type": "string", "pattern": "^[0-9A-Fa-f]{64}$" },
+        "topic": { "type": "string", "minLength": 1 }
+      }
+    },
+    "notCompared": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["subject", "reason"],
+      "properties": {
+        "subject": { "type": "string", "minLength": 1 },
+        "reason": { "type": "string", "minLength": 1 }
+      }
+    },
+    "rpc": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["host", "oldest_ledger"],
+      "properties": {
+        "host": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9.-]+(?::[0-9]+)?$"
+        },
+        "oldest_ledger": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295
+        }
+      }
+    }
+  }
+}
