@@ -59,6 +59,12 @@ comparison values could not be measured.
 See [`docs/detectors.md`](docs/detectors.md) for the detector reference and
 [`docs/report.schema.json`](docs/report.schema.json) for the report contract.
 
+## Documentation
+
+The complete GitBook-ready navigation is in [`SUMMARY.md`](SUMMARY.md). Import
+this repository through GitBook Git Sync using the `main` branch; the setup
+notes are in [`docs/GITBOOK_DEPLOYMENT.md`](docs/GITBOOK_DEPLOYMENT.md).
+
 ## Development
 
 The project requires Go 1.26.1 or newer. The verified local and SDK versions are
