@@ -22,6 +22,7 @@ func TestEnricherAttachEvidenceScenarios(t *testing.T) {
 		events         []rpcx.Event
 		want           model.Evidence
 		wantEventCalls int
+		wantTxCalls    int
 	}{
 		{
 			name:         "matching event inside retention",
@@ -45,6 +46,7 @@ func TestEnricherAttachEvidenceScenarios(t *testing.T) {
 				}},
 			},
 			wantEventCalls: 1,
+			wantTxCalls:    1,
 		},
 		{
 			name:         "comparison interval starts outside retention",
@@ -90,6 +92,9 @@ func TestEnricherAttachEvidenceScenarios(t *testing.T) {
 					eventRequest = request
 					return rpcx.EventsPage{Events: test.events}, nil
 				},
+				GetTransactionFunc: func(_ context.Context, hash string) (rpcx.Transaction, error) {
+					return rpcx.Transaction{Hash: hash, Ledger: 105}, nil
+				},
 			}
 			enricher, err := NewEnricher(client)
 			if err != nil {
@@ -112,8 +117,13 @@ func TestEnricherAttachEvidenceScenarios(t *testing.T) {
 				t.Fatalf("input finding was mutated: %#v", input[0])
 			}
 			calls := client.Calls()
-			if calls.GetHealth != 1 || len(calls.GetEvents) != test.wantEventCalls {
-				t.Fatalf("calls = %#v, want health=1 events=%d", calls, test.wantEventCalls)
+			if calls.GetHealth != 1 || len(calls.GetEvents) != test.wantEventCalls || len(calls.GetTransaction) != test.wantTxCalls {
+				t.Fatalf(
+					"calls = %#v, want health=1 events=%d transactions=%d",
+					calls,
+					test.wantEventCalls,
+					test.wantTxCalls,
+				)
 			}
 			if test.wantEventCalls > 0 && (eventRequest.StartLedger != test.beforeLedger+1 || eventRequest.EndLedger != test.afterLedger) {
 				t.Fatalf("event range = %d..%d", eventRequest.StartLedger, eventRequest.EndLedger)

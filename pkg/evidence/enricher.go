@@ -86,11 +86,43 @@ func (enricher *Enricher) Attach(
 		}
 		status := model.EvidenceNotEmitted
 		if len(items) > 0 {
+			if err := enricher.resolveTransactions(ctx, items); err != nil {
+				return nil, fmt.Errorf("attach evidence for %s: %w", result[index].Code, err)
+			}
 			status = model.EvidenceFound
 		}
 		result[index].Evidence = model.Evidence{Status: status, Items: items}
 	}
 	return result, nil
+}
+
+func (enricher *Enricher) resolveTransactions(ctx context.Context, items []model.EvidenceItem) error {
+	seen := make(map[string]struct{}, len(items))
+	for _, item := range items {
+		if item.TxHash == "" {
+			return fmt.Errorf("resolve evidence transaction: event has no transaction hash")
+		}
+		if _, ok := seen[item.TxHash]; ok {
+			continue
+		}
+		seen[item.TxHash] = struct{}{}
+		transaction, err := enricher.client.GetTransaction(ctx, item.TxHash)
+		if err != nil {
+			return fmt.Errorf("resolve evidence transaction %s: %w", item.TxHash, err)
+		}
+		if transaction.Hash != "" && transaction.Hash != item.TxHash {
+			return fmt.Errorf("resolve evidence transaction %s: RPC returned hash %s", item.TxHash, transaction.Hash)
+		}
+		if transaction.Ledger != 0 && transaction.Ledger != item.Ledger {
+			return fmt.Errorf(
+				"resolve evidence transaction %s: event ledger %d differs from transaction ledger %d",
+				item.TxHash,
+				item.Ledger,
+				transaction.Ledger,
+			)
+		}
+	}
+	return nil
 }
 
 func evidenceTargets(
