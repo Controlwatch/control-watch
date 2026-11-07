@@ -32,6 +32,8 @@ field is listed under `not_compared` instead.
 Evidence starts after the baseline ledger and is bounded by the RPC server's
 retention floor. Matching events are checked by their exact segment-zero topic
 symbol and their transactions are resolved before a finding is marked `FOUND`.
+Event requests use pages of 100 records and stop after 1,000 pages to keep a
+report bounded; exceeding that limit is an operational error.
 
 When the change predates retained history, the finding remains visible with
 `UNAVAILABLE_OUTSIDE_RETENTION` and a `changed_between` ledger interval bounded

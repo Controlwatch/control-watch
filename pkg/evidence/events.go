@@ -11,7 +11,10 @@ import (
 	"github.com/stellar/go-stellar-sdk/xdr"
 )
 
-const eventPageSize uint32 = 100
+const (
+	eventPageSize = 100
+	maxEventPages = 1000
+)
 
 // EventQuery selects contracts, event names, and an inclusive ledger range.
 type EventQuery struct {
@@ -71,7 +74,10 @@ func SearchEvents(
 		}},
 	}
 	items := []model.EvidenceItem{}
-	for {
+	for pageNumber := 0; ; pageNumber++ {
+		if pageNumber >= maxEventPages {
+			return nil, fmt.Errorf("search events: pagination exceeded %d pages", maxEventPages)
+		}
 		page, err := client.GetEvents(ctx, request)
 		if err != nil {
 			return nil, fmt.Errorf("search events: %w", err)
