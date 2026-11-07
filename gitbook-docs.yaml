@@ -1,0 +1,12 @@
+$schema: https://api.gitbook.com/gitbook-docs.yaml
+
+site:
+  title: ControlWatch Documentation
+  structure:
+    - type: space
+      key: controlwatch-docs
+      title: ControlWatch
+      path: controlwatch
+      default: true
+      content:
+        directory: ./docs
